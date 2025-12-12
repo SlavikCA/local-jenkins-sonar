@@ -1,0 +1,48 @@
+services:
+  sonarqube:
+    image: sonarqube:9.4.0-community
+    container_name: sonar9
+    ports:
+      - "80:9000"
+    volumes:
+      - ./data:/opt/sonarqube/data # data files, such as the embedded H2 database and Elasticsearch indexes
+      - ./logs:/opt/sonarqube/logs # : contains SonarQube logs about access, web process, CE process, Elasticsearch logs
+      - ./conf/sonar.properties:/opt/sonarqube/conf/sonar.properties
+      - ./bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+      - ./sonarqube_plugins:/opt/sonarqube/extensions/plugins
+#      - ./extensions:/opt/sonarqube/extensions #: for 3rd party plugins
+    entrypoint: ["bash", "-c", "rm lib/extensions/sonar-scala*; bin/run.sh"]
+
+  plugins:
+    image: mwizner/sonarqube-scala-plugins:latest
+    volumes:
+      - ./sonarqube_plugins:/opt/sonarqube/extensions/plugins
+    command: /bin/true
+
+  jenkins:
+    container_name: jenkins
+    build: "jenkins/"
+    ports:
+      - "9080:9080"
+    environment:
+      - JAVA_OPTS:-Xmx2048m -XX:MaxPermSize=512m -Djava.awt.headless=true
+      - OPENSSL_CONF=/etc/ssl
+    links:
+      - sonarqube
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /home/slavik:/home/slavik  # source code will be there
+      - ./sonarqube_plugins:/opt/sonarqube/extensions/plugins
+
+  node8:
+    container_name: node8
+    build: "node8/"
+    # /usr/local/openjdk-8
+    volumes:
+      - ./node8/jenkins:/home/jenkins
+      - /home/slavik:/home/slavik  # source code will be there
+    working_dir: /home/jenkins
+    depends_on:
+      - jenkins  # Ensures Jenkins starts first
+    entrypoint: ["/home/jenkins/start.sh"]
+    

@@ -12,8 +12,6 @@ RUN apt-get install -y  --no-install-recommends maven
 #RUN apt-get install nodejs npm -y
 #RUN npm install -g -y grunt grunt-cli
 
-# put in our oracle proxy for maven
-COPY maven_settings.xml /usr/share/maven/conf/settings.xml
 
 #                             INSTALL JENKINS
 #=============================================================================
